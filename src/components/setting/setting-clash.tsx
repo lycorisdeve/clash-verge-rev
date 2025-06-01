@@ -48,6 +48,7 @@ const SettingClash = ({ onError }: Props) => {
     "global-client-fingerprint": global,
     "keep-alive-idle": keepidle,
     "keep-alive-interval": keepalive,
+    "disable-keep-alive" : diskeepalive,
     "tcp-concurrent": tcp,
     "find-process-mode": find,
     "allow-lan": allowLan,
@@ -365,6 +366,22 @@ const SettingClash = ({ onError }: Props) => {
               </Select>
             </GuardState>
           </SettingItem>
+
+       <SettingItem
+        label={t("Disable TCP Keep Alive")}
+        >
+       <GuardState
+        value={diskeepalive ?? false}
+        valueProps="checked"
+        onCatch={onError}
+        onFormat={onSwitchFormat}
+        onChange={(e) => onChangeData({ "disable-keep-alive": e })}
+        onGuard={(e) => patchClash({ "disable-keep-alive": e })}
+         >
+          <Switch edge="end" />
+        </GuardState>
+      </SettingItem>
+
 
          <SettingItem
          label={t("TCP Keep Alive")}
