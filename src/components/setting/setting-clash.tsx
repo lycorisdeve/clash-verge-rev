@@ -401,7 +401,7 @@ const SettingClash = ({ onError }: Props) => {
           const value = e.target.value.trim();
           const num = parseInt(value, 10);
           if (isNaN(num) || num < 0) {
-          throw new Error("请输入 0 或正整数");
+          throw new Error("Please enter 0 or a positive integer");
           }
           return num;
           }}
@@ -423,7 +423,7 @@ const SettingClash = ({ onError }: Props) => {
          extra={
          <>
           <TooltipIcon
-          title={t("The maximum idle time for TCP Keep Alive.")}
+          title={t("The maximum idle time for TCP Keep Alive")}
           sx={{ color: 'text.secondary' }}
          />
          </>
@@ -436,7 +436,7 @@ const SettingClash = ({ onError }: Props) => {
           const value = e.target.value.trim();
           const num = parseInt(value, 10);
           if (isNaN(num) || num < 0) {
-          throw new Error("请输入 0 或正整数");
+          throw new Error("Please enter 0 or a positive integer");
           }
           return num;
           }}

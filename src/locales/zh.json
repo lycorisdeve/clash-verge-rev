@@ -573,5 +573,11 @@
   "Controls whether Clash matches processes": "控制是否让 Clash 去匹配进程",
   "Common Configuration": "常规设置",
   "Advanced Configuration": "高级设置",
-  "Control port value": "控制端口"
+  "Control port value": "控制端口",
+  "Disable TCP Keep Alive": "禁用 TCP Keep Alive",
+  "The interval for TCP Keep Alive packets, measured in seconds": "TCP Keep Alive 包的间隔，单位为秒",
+  "Please enter 0 or a positive integer": "请输入0或者大于0的数",
+  "TCP Keep Alive": "TCP Keep Alive ",
+  "TCP Keep Idle": "TCP Keep Idle ",
+  "The maximum idle time for TCP Keep Alive": "TCP Keep Alive 的最大空闲时间"
 }
