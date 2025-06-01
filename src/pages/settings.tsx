@@ -83,7 +83,7 @@ const SettingPage = () => {
               backgroundColor: isDark ? "#282a36" : "#ffffff",
             }}
           >
-            <SettingClash onError={onError} />
+            <SettingVergeBasic onError={onError} />
           </Box>
         </Grid>
         <Grid size={6}>
@@ -94,7 +94,7 @@ const SettingPage = () => {
               backgroundColor: isDark ? "#282a36" : "#ffffff",
             }}
           >
-            <SettingVergeBasic onError={onError} />
+            <SettingClash onError={onError} />
           </Box>
           <Box
             sx={{
