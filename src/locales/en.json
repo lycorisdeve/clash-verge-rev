@@ -570,5 +570,8 @@
   "Global UA": "Global UA",
   "Global User-Agent, takes precedence over client-UA in proxy": "Global User-Agent, takes precedence over client-UA in proxy",
   "Process Matching Mode": "Process Matching Mode",
-  "Controls whether Clash matches processes": "Controls whether Clash matches processes"
+  "Controls whether Clash matches processes": "Controls whether Clash matches processes",
+  "Common Configuration": "Common Configuration",
+  "Advanced Configuration": "Advanced Configuration",
+  "Control port value": "Control port value"
 }

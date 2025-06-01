@@ -340,9 +340,7 @@ const SettingClash = ({ onError }: Props) => {
             extra={
               <>
                 <TooltipIcon
-                  title={t(`
-                    Controls whether Clash matches processes.
-                  `)}
+                  title={t("Controls whether Clash matches processes")}
                   sx={{ color: 'text.secondary' }}
                 />
               </>

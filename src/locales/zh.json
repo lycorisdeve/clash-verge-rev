@@ -570,5 +570,8 @@
   "Global UA": "全局请求头",
   "Global User-Agent, takes precedence over client-UA in proxy": "全局 User-Agent，在代理中优先于客户端 UA",
   "Process Matching Mode": "进程匹配",
-  "Controls whether Clash matches processes": "控制是否让 Clash 去匹配进程"
+  "Controls whether Clash matches processes": "控制是否让 Clash 去匹配进程",
+  "Common Configuration": "常规设置",
+  "Advanced Configuration": "高级设置",
+  "Control port value": "控制端口"
 }
