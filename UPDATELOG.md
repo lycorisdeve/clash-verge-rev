@@ -59,6 +59,7 @@
  - 添加 全局TSL指纹 （默认 `chrome` ）
  - 添加 全局UA头 （默认 `Release` ）
  - 添加 进程匹配 （默认 `Strict` ）
+ - 添加 TCP Keep Alive Settings
 
 #### 优化了：
  - 系统代理 Bypass 设置
