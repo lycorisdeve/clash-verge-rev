@@ -35,6 +35,7 @@ interface IConfigData {
   "global-ua": string;
   "global-client-fingerprint": string;
   "keep-alive-interval": number;
+  "keep-alive-idle": number;
   "find-process-mode": string;
   "unified-delay": boolean;
   "tcp-concurrent": boolean;

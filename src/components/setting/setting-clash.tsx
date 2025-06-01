@@ -46,7 +46,8 @@ const SettingClash = ({ onError }: Props) => {
     ipv6,
     "global-ua": ua,
     "global-client-fingerprint": global,
-    "keep-alive-interval":keepalive,
+    "keep-alive-idle": keepidle,
+    "keep-alive-interval": keepalive,
     "tcp-concurrent": tcp,
     "find-process-mode": find,
     "allow-lan": allowLan,
@@ -389,6 +390,41 @@ const SettingClash = ({ onError }: Props) => {
           }}
              onChange={(e) => onChangeData({ "keep-alive-interval": e })}
             onGuard={(e) => patchClash({ "keep-alive-interval": e })}
+      >
+        <Input
+          size="small"
+         sx={{
+          width: 120,
+          "& input::placeholder": { color: "#6c757d" }
+         }}
+       />
+         </GuardState>
+      </SettingItem>
+
+         <SettingItem
+         label={t("TCP Keep Idle")}
+         extra={
+         <>
+          <TooltipIcon
+          title={t("The maximum idle time for TCP Keep Alive.")}
+          sx={{ color: 'text.secondary' }}
+         />
+         </>
+         }
+      >
+          <GuardState
+          value={keepidle || 15}
+          onCatch={onError}
+          onFormat={(e) => {
+          const value = e.target.value.trim();
+          const num = parseInt(value, 10);
+          if (isNaN(num) || num < 0) {
+          throw new Error("请输入 0 或正整数");
+          }
+          return num;
+          }}
+             onChange={(e) => onChangeData({ "keep-alive-idle": e })}
+            onGuard={(e) => patchClash({ "keep-alive-idle": e })}
       >
         <Input
           size="small"
