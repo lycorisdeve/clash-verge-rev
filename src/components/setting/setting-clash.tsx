@@ -291,14 +291,13 @@ const SettingClash = ({ onError }: Props) => {
                 size="small"
                 sx={{ width: 120, "> div": { py: "7.5px" } }}
               >
-                <MenuItem value="clash-verge-rev/v9.9.9-alpha">Alpha</MenuItem>
                 <MenuItem value="clash-verge-rev/v2.3.0">Release</MenuItem>
                 <MenuItem value="clash-verge/v2.8.0">Verge</MenuItem>
                 <MenuItem value="Clash-Meta/v1.18.0">Meta</MenuItem>
-                <MenuItem value="Mihomo/v1.19.9">Mihomo</MenuItem>
-                <MenuItem value="ClashforWindows/0.20.31">CFW</MenuItem>
-                <MenuItem value="Clash-Premium/1.17.0">Premium</MenuItem>
-                <MenuItem value="Clash/1.10.0">Clash</MenuItem>
+                <MenuItem value="Mihomo/v4.0.1">Mihomo</MenuItem>
+                <MenuItem value="ClashforWindows/0.20.80">CFW</MenuItem>
+                <MenuItem value="Clash-Premium/1.20.0">Premium</MenuItem>
+                <MenuItem value="Clash/1.99.0">Clash</MenuItem>
               </Select>
             </GuardState>
           </SettingItem>
