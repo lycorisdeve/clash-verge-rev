@@ -7,11 +7,16 @@ import { updateGeoData } from "@/services/api";
 import { invoke_uwp_tool } from "@/services/cmds";
 import { showNotice } from "@/services/noticeService";
 import getSystem from "@/utils/get-system";
+import { LanRounded, SettingsRounded } from "@mui/icons-material";
 import {
-  LanRounded,
-  SettingsRounded
-} from "@mui/icons-material";
-import { MenuItem, Select, TextField, Typography } from "@mui/material";
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
 import { useLockFn } from "ahooks";
 import { useRef, useState } from "react";
@@ -75,9 +80,9 @@ const SettingClash = ({ onError }: Props) => {
   const onUpdateGeo = async () => {
     try {
       await updateGeoData();
-      showNotice('success', t("GeoData Updated"));
+      showNotice("success", t("GeoData Updated"));
     } catch (err: any) {
-      showNotice('error', err?.response.data.message || err.toString());
+      showNotice("error", err?.response.data.message || err.toString());
     }
   };
 
@@ -94,7 +99,7 @@ const SettingClash = ({ onError }: Props) => {
     } catch (err: any) {
       setDnsSettingsEnabled(!enable);
       localStorage.setItem("dns_settings_enabled", String(!enable));
-      showNotice('error', err.message || err.toString());
+      showNotice("error", err.message || err.toString());
       await patchVerge({ enable_dns_settings: !enable }).catch(() => {});
       throw err;
     }
@@ -109,248 +114,273 @@ const SettingClash = ({ onError }: Props) => {
       <NetworkInterfaceViewer ref={networkRef} />
       <DnsViewer ref={dnsRef} />
 
-      <SettingItem
-        label={t("Allow Lan")}
-        extra={
-          <TooltipIcon
-            title={t("Network Interface")}
-            color={"inherit"}
-            icon={LanRounded}
-            onClick={() => {
-              networkRef.current?.open();
-            }}
-          />
-        }
-      >
-        <GuardState
-          value={allowLan ?? false}
-          valueProps="checked"
-          onCatch={onError}
-          onFormat={onSwitchFormat}
-          onChange={(e) => onChangeData({ "allow-lan": e })}
-          onGuard={(e) => patchClash({ "allow-lan": e })}
+      <Accordion>
+        <AccordionSummary
+          aria-controls="common-config-panel"
+          id="common-config-summary"
         >
-          <Switch edge="end" />
-        </GuardState>
-      </SettingItem>
-
-      <SettingItem
-        label={t("DNS Overwrite")}
-        extra={
-          <TooltipIcon
-            icon={SettingsRounded}
-            onClick={() => dnsRef.current?.open()}
-          />
-        }
-      >
-        <Switch
-          edge="end"
-          checked={dnsSettingsEnabled}
-          onChange={(_, checked) => handleDnsToggle(checked)}
-        />
-      </SettingItem>
-
-      <SettingItem label={t("IPv6")}>
-        <GuardState
-          value={ipv6 ?? false}
-          valueProps="checked"
-          onCatch={onError}
-          onFormat={onSwitchFormat}
-          onChange={(e) => onChangeData({ ipv6: e })}
-          onGuard={(e) => patchClash({ ipv6: e })}
-        >
-          <Switch edge="end" />
-        </GuardState>
-      </SettingItem>
-
-      <SettingItem
-        label={t("Unified Delay")}
-        extra={
-          <TooltipIcon
-            title={t("Unified Delay Info")}
-            sx={{ opacity: "0.7" }}
-          />
-        }
-      >
-        <GuardState
-          value={unifiedDelay ?? false}
-          valueProps="checked"
-          onCatch={onError}
-          onFormat={onSwitchFormat}
-          onChange={(e) => onChangeData({ "unified-delay": e })}
-          onGuard={(e) => patchClash({ "unified-delay": e })}
-        >
-          <Switch edge="end" />
-        </GuardState>
-      </SettingItem>
-
-      <SettingItem
-        label={t("TCP Concurrency")}
-        extra={
-          <TooltipIcon
-            title={t("TCP ConcurrencyWhen accessing a web page, DNS resolution generally results in multiple IP addresses.")}
-            sx={{ opacity: "0.7" }}
-          />
-        }
-      >
-        <GuardState
-          value={tcp ?? false}
-          valueProps="checked"
-          onCatch={onError}
-          onFormat={onSwitchFormat}
-          onChange={(e) => onChangeData({ "tcp-concurrent": e })}
-          onGuard={(e) => patchClash({ "tcp-concurrent": e })}
-        >
-          <Switch edge="end" />
-        </GuardState>
-      </SettingItem>
-
-       <SettingItem
-        label={t("Global UA")}
-        extra={
-      <TooltipIcon
-         title={t("Global User-Agent, takes precedence over client-UA in proxy")}
-         sx={{ opacity: "0.7" }}
-      />
-     }
-    >
-     <GuardState
-        value={ua || "clash-verge-rev/v2.3.0"}
-        onCatch={onError}
-        onFormat={(e: any) => e.target.value}
-        onChange={(e) => onChangeData({ "global-ua": e })}
-        onGuard={(e) => patchClash({ "global-ua": e })}
-      >
-       <Select
-         size="small"
-         sx={{ width: 120, "> div": { py: "7.5px" } }}
-       >
-         <MenuItem value="clash-verge-rev/v9.9.9-alpha">Alpha</MenuItem>
-         <MenuItem value="clash-verge-rev/v2.3.0">Release</MenuItem>
-         <MenuItem value="clash-verge/v2.8.0">Verge</MenuItem>
-         <MenuItem value="Clash-Meta/v1.18.0">Meta</MenuItem>
-         <MenuItem value="Mihomo/v1.19.9">Mihomo</MenuItem>
-         <MenuItem value="ClashforWindows/0.20.31">CFW</MenuItem>
-         <MenuItem value="Clash-Premium/1.17.0">Premium</MenuItem>
-         <MenuItem value="Clash/1.10.0">Clash</MenuItem>
-        </Select>
-       </GuardState>
-     </SettingItem>
-
-      <SettingItem
-        label={t("Global TLS fingerprint")}
-        extra={
-       <TooltipIcon
-        title={t("Global TLS fingerprint, takes precedence over client-fingerprint in proxy")}
-        sx={{ opacity: "0.7" }}
-      />
-      }
-    >
-      <GuardState
-       value={global || "chrome"}
-       onCatch={onError}
-       onFormat={(e: any) => e.target.value}
-       onChange={(e) => onChangeData({ "global-client-fingerprint": e })}
-       onGuard={(e) => patchClash({ "global-client-fingerprint": e })}
-      >
-      <Select
-        size="small"
-        sx={{ width: 120, "> div": { py: "7.5px" } }}
-      >
-      <MenuItem value="chrome">Chrome</MenuItem>
-      <MenuItem value="firefox">Firefox</MenuItem>
-      <MenuItem value="safari">Safari</MenuItem>
-      <MenuItem value="ios">iOS</MenuItem>
-      <MenuItem value="android">Android</MenuItem>
-      <MenuItem value="edge">Edge</MenuItem>
-      <MenuItem value="360">360</MenuItem>
-      <MenuItem value="qq">QQ</MenuItem>
-      <MenuItem value="random">Random</MenuItem>
-       </Select>
-     </GuardState>
-   </SettingItem>
-
-    <SettingItem
-       label={t("Process Matching Mode")}
-        extra={
-          <>
-            <TooltipIcon
-                title={t(`
-                    Controls whether Clash matches processes.
-                `)}
-                sx={{ opacity: "0.7" }}
-            />
-        </>
-       }
-   >
-    <GuardState
-        value={find || "strict"}
-        onCatch={onError}
-        onFormat={(e: any) => e.target.value}
-        onChange={(e) => onChangeData({ "find-process-mode": e })}
-        onGuard={(e) => patchClash({ "find-process-mode": e })}
-      >
-        <Select
-            size="small"
-            sx={{ width: 120, "> div": { py: "7.5px" } }}
+          <Typography sx={{ color: 'text.primary' }}>{t("Common Configuration")}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <SettingItem
+            label={t("Allow Lan")}
+            extra={
+              <TooltipIcon
+                title={t("Network Interface")}
+                color={"inherit"}
+                icon={LanRounded}
+                onClick={() => {
+                  networkRef.current?.open();
+                }}
+              />
+            }
           >
-            <MenuItem value="always">Always</MenuItem>
-            <MenuItem value="strict">Strict</MenuItem>
-            <MenuItem value="off">Off</MenuItem>
-           </Select>
-        </GuardState>
-      </SettingItem>
+            <GuardState
+              value={allowLan ?? false}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ "allow-lan": e })}
+              onGuard={(e) => patchClash({ "allow-lan": e })}
+            >
+              <Switch edge="end" />
+            </GuardState>
+          </SettingItem>
 
-      <SettingItem
-        label={t("Log Level")}
-        extra={
-          <TooltipIcon title={t("Log Level Info")} sx={{ opacity: "0.7" }} />
-        }
-      >
-        <GuardState
-          value={logLevel === "warn" ? "warning" : (logLevel ?? "info")}
-          onCatch={onError}
-          onFormat={(e: any) => e.target.value}
-          onChange={(e) => onChangeData({ "log-level": e })}
-          onGuard={(e) => patchClash({ "log-level": e })}
+          <SettingItem
+            label={t("IPv6")}
+          >
+            <GuardState
+              value={ipv6 ?? false}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ ipv6: e })}
+              onGuard={(e) => patchClash({ ipv6: e })}
+            >
+              <Switch edge="end" />
+            </GuardState>
+          </SettingItem>
+
+          <SettingItem
+            label={t("Unified Delay")}
+            extra={
+              <TooltipIcon
+                title={t("Unified Delay Info")}
+                sx={{ color: 'text.secondary' }}
+              />
+            }
+          >
+            <GuardState
+              value={unifiedDelay ?? false}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ "unified-delay": e })}
+              onGuard={(e) => patchClash({ "unified-delay": e })}
+            >
+              <Switch edge="end" />
+            </GuardState>
+          </SettingItem>
+
+          <SettingItem
+            label={t("TCP Concurrency")}
+            extra={
+              <TooltipIcon
+                title={t("TCP ConcurrencyWhen accessing a web page, DNS resolution generally results in multiple IP addresses.")}
+                sx={{ color: 'text.secondary' }}
+              />
+            }
+          >
+            <GuardState
+              value={tcp ?? false}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ "tcp-concurrent": e })}
+              onGuard={(e) => patchClash({ "tcp-concurrent": e })}
+            >
+              <Switch edge="end" />
+            </GuardState>
+          </SettingItem>
+
+          <SettingItem
+            label={t("Log Level")}
+            extra={
+              <TooltipIcon
+                title={t("Log Level Info")}
+                sx={{ color: 'text.secondary' }}
+              />
+            }
+          >
+            <GuardState
+              value={logLevel === "warn" ? "warning" : (logLevel ?? "info")}
+              onCatch={onError}
+              onFormat={(e: any) => e.target.value}
+              onChange={(e) => onChangeData({ "log-level": e })}
+              onGuard={(e) => patchClash({ "log-level": e })}
+            >
+              <Select size="small" sx={{ width: 120, "> div": { py: "7.5px" } }}>
+                <MenuItem value="debug">Debug</MenuItem>
+                <MenuItem value="info">Info</MenuItem>
+                <MenuItem value="warning">Warn</MenuItem>
+                <MenuItem value="error">Error</MenuItem>
+                <MenuItem value="silent">Silent</MenuItem>
+              </Select>
+            </GuardState>
+          </SettingItem>
+
+          <SettingItem
+            label={t("Port Config")}
+            onClick={() => portRef.current?.open()}
+            extra={
+              <TooltipIcon
+                title={t("Control port value")}
+                sx={{ color: 'text.secondary' }}
+              />
+            }
+          />
+
+          <SettingItem onClick={() => webRef.current?.open()} label={t("Web UI")} />
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion>
+        <AccordionSummary
+          aria-controls="advanced-config-panel"
+          id="advanced-config-summary"
         >
-          <Select size="small" sx={{ width: 120, "> div": { py: "7.5px" } }}>
-            <MenuItem value="debug">Debug</MenuItem>
-            <MenuItem value="info">Info</MenuItem>
-            <MenuItem value="warning">Warn</MenuItem>
-            <MenuItem value="error">Error</MenuItem>
-            <MenuItem value="silent">Silent</MenuItem>
-          </Select>
-        </GuardState>
-      </SettingItem>
+           <Typography sx={{ color: 'text.primary' }}>{t("Advanced Configuration")}</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
 
-      <SettingItem
-        onClick={() => portRef.current?.open()}
-        label={
-          <>
-            {t("Port Config")}
-            <TooltipIcon
-              title={t("Control port value")}
-              sx={{ opacity: "0.7" }}
+          <SettingItem
+            label={t("DNS Overwrite")}
+            extra={
+              <TooltipIcon
+                icon={SettingsRounded}
+                onClick={() => dnsRef.current?.open()}
+                sx={{ color: 'text.secondary' }}
+              />
+            }
+          >
+            <Switch
+              edge="end"
+              checked={dnsSettingsEnabled}
+              onChange={(_, checked) => handleDnsToggle(checked)}
             />
-          </>
-        }
-      />
+          </SettingItem>
 
-      <SettingItem
-        onClick={() => ctrlRef.current?.open()}
-        label={
-          <>
-            {t("External")}
-            <TooltipIcon
-              title={t("Control API Port Key")}
-              sx={{ opacity: "0.7" }}
-            />
-          </>
-        }
-      />
+          <SettingItem
+            label={t("Global UA")}
+            extra={
+              <TooltipIcon
+                title={t("Global User-Agent, takes precedence over client-UA in proxy")}
+                sx={{ color: 'text.secondary' }}
+              />
+            }
+          >
+            <GuardState
+              value={ua || "clash-verge-rev/v2.3.0"}
+              onCatch={onError}
+              onFormat={(e: any) => e.target.value}
+              onChange={(e) => onChangeData({ "global-ua": e })}
+              onGuard={(e) => patchClash({ "global-ua": e })}
+            >
+              <Select
+                size="small"
+                sx={{ width: 120, "> div": { py: "7.5px" } }}
+              >
+                <MenuItem value="clash-verge-rev/v9.9.9-alpha">Alpha</MenuItem>
+                <MenuItem value="clash-verge-rev/v2.3.0">Release</MenuItem>
+                <MenuItem value="clash-verge/v2.8.0">Verge</MenuItem>
+                <MenuItem value="Clash-Meta/v1.18.0">Meta</MenuItem>
+                <MenuItem value="Mihomo/v1.19.9">Mihomo</MenuItem>
+                <MenuItem value="ClashforWindows/0.20.31">CFW</MenuItem>
+                <MenuItem value="Clash-Premium/1.17.0">Premium</MenuItem>
+                <MenuItem value="Clash/1.10.0">Clash</MenuItem>
+              </Select>
+            </GuardState>
+          </SettingItem>
 
-      <SettingItem onClick={() => webRef.current?.open()} label={t("Web UI")} />
+          <SettingItem
+            label={t("Global TLS fingerprint")}
+            extra={
+              <TooltipIcon
+                title={t("Global TLS fingerprint, takes precedence over client-fingerprint in proxy")}
+                sx={{ color: 'text.secondary' }}
+              />
+            }
+          >
+            <GuardState
+              value={global || "chrome"}
+              onCatch={onError}
+              onFormat={(e: any) => e.target.value}
+              onChange={(e) => onChangeData({ "global-client-fingerprint": e })}
+              onGuard={(e) => patchClash({ "global-client-fingerprint": e })}
+            >
+              <Select
+                size="small"
+                sx={{ width: 120, "> div": { py: "7.5px" } }}
+              >
+                <MenuItem value="chrome">Chrome</MenuItem>
+                <MenuItem value="firefox">Firefox</MenuItem>
+                <MenuItem value="safari">Safari</MenuItem>
+                <MenuItem value="ios">iOS</MenuItem>
+                <MenuItem value="android">Android</MenuItem>
+                <MenuItem value="edge">Edge</MenuItem>
+                <MenuItem value="360">360</MenuItem>
+                <MenuItem value="qq">QQ</MenuItem>
+                <MenuItem value="random">Random</MenuItem>
+              </Select>
+            </GuardState>
+          </SettingItem>
+
+          <SettingItem
+            label={t("Process Matching Mode")}
+            extra={
+              <>
+                <TooltipIcon
+                  title={t(`
+                    Controls whether Clash matches processes.
+                  `)}
+                  sx={{ color: 'text.secondary' }}
+                />
+              </>
+            }
+          >
+            <GuardState
+              value={find || "strict"}
+              onCatch={onError}
+              onFormat={(e: any) => e.target.value}
+              onChange={(e) => onChangeData({ "find-process-mode": e })}
+              onGuard={(e) => patchClash({ "find-process-mode": e })}
+            >
+              <Select
+                size="small"
+                sx={{ width: 120, "> div": { py: "7.5px" } }}
+              >
+                <MenuItem value="always">Always</MenuItem>
+                <MenuItem value="strict">Strict</MenuItem>
+                <MenuItem value="off">Off</MenuItem>
+              </Select>
+            </GuardState>
+          </SettingItem>
+
+          <SettingItem
+            onClick={() => ctrlRef.current?.open()}
+            label={
+              <>
+                {t("External")}
+                <TooltipIcon
+                  title={t("Control API Port Key")}
+                  sx={{ color: 'text.secondary' }}
+                />
+              </>
+            }
+          />
+        </AccordionDetails>
+      </Accordion>
 
       <SettingItem
         label={t("Clash Core")}
@@ -358,6 +388,7 @@ const SettingClash = ({ onError }: Props) => {
           <TooltipIcon
             icon={SettingsRounded}
             onClick={() => coreRef.current?.open()}
+            sx={{ color: 'text.secondary' }}
           />
         }
       >
@@ -371,7 +402,7 @@ const SettingClash = ({ onError }: Props) => {
           extra={
             <TooltipIcon
               title={t("Open UWP tool Info")}
-              sx={{ opacity: "0.7" }}
+              sx={{ color: 'text.secondary' }}
             />
           }
         />
