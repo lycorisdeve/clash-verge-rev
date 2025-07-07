@@ -30,7 +30,7 @@ jobs:
       id: sync
       uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
       with:
-        target_sync_branch: ${{ secrets.MY_TARGET_SYNC_BRANCH }}
+        target_sync_branch: ${{ secrets.SYNC_BRANCH }}
         target_repo_token: ${{ secrets.GITHUB_TOKEN }}
         upstream_sync_branch: master
         upstream_sync_repo: lycorisdeve/clash-verge-rev  # 这里填入上游仓库
