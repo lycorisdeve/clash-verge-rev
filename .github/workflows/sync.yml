@@ -1,0 +1,155 @@
+name: 'Sync Upstream Code and Releases'
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # 每天自动同步
+  workflow_dispatch:  # 支持手动触发
+    inputs:
+      sync_test_mode:
+        description: 'Fork Sync Test Mode'
+        type: boolean
+        default: false
+
+jobs:
+  sync_code_from_upstream:
+    runs-on: ubuntu-latest
+    name: Sync latest commits from upstream repo
+    if: ${{ github.event.repository.fork }}
+
+    steps:
+    - name: Checkout target repo
+      uses: actions/checkout@v3
+      with:
+        ref:  ${{ secrets.MY_TARGET_SYNC_BRANCH }}
+        persist-credentials: false
+
+    - name: Sync upstream changes
+      id: sync
+      uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+      with:
+        target_sync_branch: ${{ secrets.MY_TARGET_SYNC_BRANCH }}
+        target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+        upstream_sync_branch: master
+        upstream_sync_repo: lycorisdeve/clash-verge-rev  # 这里填入上游仓库
+        test_mode: ${{ inputs.sync_test_mode }}
+
+    - name: New commits found
+      if: steps.sync.outputs.has_new_commits == 'true'
+      run: echo "New commits were found to sync."
+
+    - name: No new commits
+      if: steps.sync.outputs.has_new_commits == 'false'
+      run: echo "There were no new commits."
+
+    - name: Show value of 'has_new_commits'
+      run: echo ${{ steps.sync.outputs.has_new_commits }}
+
+    - name: Sync check
+      if: failure()
+      run: |
+        echo "[Error] 由于上游仓库的 workflow 文件变更，导致 GitHub 自动暂停了本次自动更新，你需要手动 Sync Fork 一次"
+        echo "[Error] Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork."
+        exit 1
+
+  sync_releases_from_upstream:
+    name: Sync all releases from upstream (with pagination)
+    runs-on: ubuntu-latest
+    needs: sync_code_from_upstream  # 确保代码同步后再进行 releases 同步
+
+    steps:
+      - name: Checkout your fork
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI & jq
+        run: |
+          sudo apt update
+          sudo apt install -y gh jq
+
+      - name: Authenticate GitHub CLI
+        run: echo "${{ secrets.GH_TOKEN }}" | gh auth login --with-token
+
+      - name: Clone upstream repo and prepare workspace
+        run: |
+          gh repo clone lycorisdeve/clash-verge-rev upstream-repo
+          mkdir -p releases_download
+
+      - name: Sync all upstream releases with pagination
+        run: |
+          upstream_repo="lycorisdeve/clash-verge-rev"
+          fork_repo="${{ github.repository }}"
+
+          echo "Fetching all upstream releases with pagination..."
+          page=1
+          all_upstream_releases="[]"
+          while :; do
+            releases=$(gh api -H "Accept: application/vnd.github+json" "/repos/$upstream_repo/releases?per_page=100&page=$page")
+            count=$(echo "$releases" | jq length)
+            if [ "$count" -eq 0 ]; then
+              break
+            fi
+            all_upstream_releases=$(jq -s 'add' <(echo "$all_upstream_releases") <(echo "$releases"))
+            ((page++))
+          done
+          echo "$all_upstream_releases" > upstream_releases.json
+          echo "Fetched all upstream releases."
+
+          echo "Fetching all fork releases with pagination..."
+          page=1
+          all_fork_releases="[]"
+          while :; do
+            releases=$(gh api -H "Accept: application/vnd.github+json" "/repos/$fork_repo/releases?per_page=100&page=$page")
+            count=$(echo "$releases" | jq length)
+            if [ "$count" -eq 0 ]; then
+              break
+            fi
+            all_fork_releases=$(jq -s 'add' <(echo "$all_fork_releases") <(echo "$releases"))
+            ((page++))
+          done
+          echo "$all_fork_releases" > fork_releases.json
+          echo "Fetched all fork releases."
+
+          existing_tags=$(jq -r '.[].tag_name' fork_releases.json | tr '\n' ' ')
+          echo "Fork already has tags: $existing_tags"
+
+          echo "Sorting upstream releases by creation date..."
+          sorted_releases=$(jq -s 'add | sort_by(.created_at)' upstream_releases.json)
+
+          echo "$sorted_releases" | jq -c '.[] | select(.draft == false)' | while read -r release; do
+            tag=$(echo "$release" | jq -r '.tag_name')
+
+            if echo "$existing_tags" | grep -qw "$tag"; then
+              echo "✔ Release $tag already exists in fork, skipping."
+              continue
+            fi
+
+            title=$(echo "$release" | jq -r '.name')
+            body=$(echo "$release" | jq -r '.body // ""')
+            prerelease=$(echo "$release" | jq -r '.prerelease')
+
+            download_dir="releases_download/$tag"
+            mkdir -p "$download_dir"
+
+            echo "⬇ Downloading assets for $tag..."
+            gh release download "$tag" -R "$upstream_repo" -D "$download_dir" || echo "⚠ No assets for $tag."
+
+            echo "🚀 Creating release $tag in fork..."
+            if [ "$prerelease" = "true" ]; then
+              gh release create "$tag" $download_dir/* \
+                -R "$fork_repo" \
+                -t "$title" \
+                -n "$body" \
+                --prerelease
+            else
+              gh release create "$tag" $download_dir/* \
+                -R "$fork_repo" \
+                -t "$title" \
+                -n "$body"
+            fi
+
+            echo "✅ Synced release: $tag"
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
