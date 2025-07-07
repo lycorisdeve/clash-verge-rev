@@ -23,7 +23,7 @@ jobs:
     - name: Checkout target repo
       uses: actions/checkout@v3
       with:
-        ref:  ${{ secrets.MY_TARGET_SYNC_BRANCH }}
+        ref:  ${{ secrets.SYNC_BRANCH }}
         persist-credentials: false
 
     - name: Sync upstream changes
@@ -152,4 +152,4 @@ jobs:
             echo "✅ Synced release: $tag"
           done
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYNC_GITHUB_TOKEN }}
