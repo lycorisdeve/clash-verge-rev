@@ -76,7 +76,7 @@ jobs:
 
     - name: Clone upstream repo and prepare workspace
       run: |
-        gh repo clone clash-verge-rev/clash-verge-rev.git upstream-repo
+        gh repo clone clash-verge-rev/clash-verge-rev upstream-repo
         mkdir -p releases_download
 
     - name: Sync all upstream releases with pagination
