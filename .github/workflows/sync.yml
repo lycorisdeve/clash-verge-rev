@@ -76,7 +76,7 @@ jobs:
 
     - name: Clone upstream repo and prepare workspace
       run: |
-        gh repo clone clash-verge-rev/clash-verge-rev upstream-repo
+        gh repo clone clash-verge-rev/clash-verge-rev.git upstream-repo
         mkdir -p releases_download
 
     - name: Sync all upstream releases with pagination
@@ -153,4 +153,13 @@ jobs:
           fi
 
           echo "✅ Synced release: $tag"
+
+          # 删除当前同步的文件，释放空间
+          echo "🧹 Cleaning up downloaded files for $tag..."
+          rm -rf "$download_dir"
+
+          # 删除 fork 中的 release（同步一个删除一个）
+          echo "🗑 Deleting release $tag from fork..."
+          gh release delete "$tag" -R "$fork_repo" --confirm || echo "⚠ Failed to delete release $tag from fork."
+          
         done
