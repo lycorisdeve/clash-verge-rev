@@ -1,4 +1,4 @@
-name: 'Sync All Branches and Releases from Upstream to Fork'
+name: 'Sync Upstream Branches and Releases'
 
 permissions:
   contents: write
