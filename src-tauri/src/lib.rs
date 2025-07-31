@@ -87,7 +87,6 @@ impl AppHandleManager {
     }
 }
 
-#[allow(clippy::panic)]
 pub fn run() {
     utils::network::NetworkManager::global().init();
 
@@ -290,6 +289,9 @@ pub fn run() {
             cmd::get_group_proxy_delays,
             cmd::is_clash_debug_enabled,
             cmd::clash_gc,
+            cmd::get_clash_logs,
+            cmd::start_logs_monitoring,
+            cmd::clear_logs,
             cmd::get_traffic_data,
             cmd::get_memory_data,
             cmd::get_formatted_traffic_data,
