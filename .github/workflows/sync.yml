@@ -1,0 +1,165 @@
+name: 'Sync Upstream Branches and Releases'
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # 每天自动同步
+  workflow_dispatch:  # 支持手动触发
+    inputs:
+      sync_test_mode:
+        description: 'Fork Sync Test Mode'
+        type: boolean
+        default: false
+
+jobs:
+  sync_all_branches_from_upstream_to_fork:
+    runs-on: ubuntu-latest
+    name: Sync all branches from upstream to fork
+    if: ${{ github.event.repository.fork }}
+
+    steps:
+    - name: Checkout target repo (fork)
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: false  # 确保不会使用缓存的 GitHub 凭证
+
+    - name: Set up Git configuration
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+
+    - name: Add upstream remote (clash-verge-rev)
+      run: |
+        git remote add upstream https://github.com/clash-verge-rev/clash-verge-rev.git
+        git fetch upstream
+
+    - name: List all branches from upstream
+      run: |
+        # 获取上游仓库的所有分支
+        upstream_branches=$(git branch -r | grep 'upstream/' | sed 's/upstream\///')
+        echo "Branches to sync: $upstream_branches"
+
+    - name: Sync all branches from upstream to fork
+      run: |
+        # 遍历所有上游分支并同步
+        for branch in $upstream_branches; do
+          echo "Syncing branch: $branch"
+          
+          # 检查本地是否有该分支，如果没有则创建一个新的分支
+          git checkout $branch || git checkout -b $branch
+          
+          # 拉取上游分支的更新
+          git pull upstream $branch
+          
+          # 将更新后的分支推送到 fork 仓库
+          git push origin $branch
+        done
+
+  sync_releases_from_upstream_to_fork:
+    name: Sync all releases from upstream to fork
+    runs-on: ubuntu-latest
+    needs: sync_all_branches_from_upstream_to_fork  # 确保代码同步完成后再同步 releases
+
+    steps:
+    - name: Checkout target repo (fork)
+      uses: actions/checkout@v3
+
+    - name: Install GitHub CLI & jq
+      run: |
+        sudo apt update
+        sudo apt install -y gh jq
+
+    - name: Authenticate GitHub CLI
+      run: echo "${{ secrets.GH_TOKEN }}" | gh auth login --with-token
+
+    - name: Clone upstream repo and prepare workspace
+      run: |
+        gh repo clone clash-verge-rev/clash-verge-rev upstream-repo
+        mkdir -p releases_download
+
+    - name: Sync all upstream releases with pagination
+      run: |
+        upstream_repo="clash-verge-rev/clash-verge-rev"
+        fork_repo="${{ github.repository }}"
+
+        echo "Fetching all upstream releases with pagination..."
+        page=1
+        all_upstream_releases="[]"
+        while :; do
+          releases=$(gh api -H "Accept: application/vnd.github+json" "/repos/$upstream_repo/releases?per_page=100&page=$page")
+          count=$(echo "$releases" | jq length)
+          if [ "$count" -eq 0 ]; then
+            break
+          fi
+          all_upstream_releases=$(jq -s 'add' <(echo "$all_upstream_releases") <(echo "$releases"))
+          ((page++))
+        done
+        echo "$all_upstream_releases" > upstream_releases.json
+        echo "Fetched all upstream releases."
+
+        echo "Fetching all fork releases with pagination..."
+        page=1
+        all_fork_releases="[]"
+        while :; do
+          releases=$(gh api -H "Accept: application/vnd.github+json" "/repos/$fork_repo/releases?per_page=100&page=$page")
+          count=$(echo "$releases" | jq length)
+          if [ "$count" -eq 0 ]; then
+            break
+          fi
+          all_fork_releases=$(jq -s 'add' <(echo "$all_fork_releases") <(echo "$releases"))
+          ((page++))
+        done
+        echo "$all_fork_releases" > fork_releases.json
+        echo "Fetched all fork releases."
+
+        existing_tags=$(jq -r '.[].tag_name' fork_releases.json | tr '\n' ' ')
+        echo "Fork already has tags: $existing_tags"
+
+        echo "Sorting upstream releases by creation date..."
+        sorted_releases=$(jq -s 'add | sort_by(.created_at)' upstream_releases.json)
+
+        echo "$sorted_releases" | jq -c '.[] | select(.draft == false)' | while read -r release; do
+          tag=$(echo "$release" | jq -r '.tag_name')
+
+          if echo "$existing_tags" | grep -qw "$tag"; then
+            echo "✔ Release $tag already exists in fork, skipping."
+            continue
+          fi
+
+          title=$(echo "$release" | jq -r '.name')
+          body=$(echo "$release" | jq -r '.body // ""')
+          prerelease=$(echo "$release" | jq -r '.prerelease')
+
+          download_dir="releases_download/$tag"
+          mkdir -p "$download_dir"
+
+          echo "⬇ Downloading assets for $tag..."
+          gh release download "$tag" -R "$upstream_repo" -D "$download_dir" || echo "⚠ No assets for $tag."
+
+          echo "🚀 Creating release $tag in fork..."
+          if [ "$prerelease" = "true" ]; then
+            gh release create "$tag" $download_dir/* \
+              -R "$fork_repo" \
+              -t "$title" \
+              -n "$body" \
+              --prerelease
+          else
+            gh release create "$tag" $download_dir/* \
+              -R "$fork_repo" \
+              -t "$title" \
+              -n "$body"
+          fi
+
+          echo "✅ Synced release: $tag"
+
+          # 删除当前同步的文件，释放空间
+          echo "🧹 Cleaning up downloaded files for $tag..."
+          rm -rf "$download_dir"
+
+          # 删除 fork 中的 release（同步一个删除一个）
+          echo "🗑 Deleting release $tag from fork..."
+          gh release delete "$tag" -R "$fork_repo" --confirm || echo "⚠ Failed to delete release $tag from fork."
+          
+        done
